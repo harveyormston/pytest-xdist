@@ -5,6 +5,7 @@ from xdist.workermanage import NodeManager
 from xdist.scheduler import (
     EachScheduling,
     LoadScheduling,
+    SmallQueueLoadScheduling,
     LoadScopeScheduling,
     LoadFileScheduling,
 )
@@ -99,6 +100,7 @@ class DSession(object):
         schedulers = {
             "each": EachScheduling,
             "load": LoadScheduling,
+            "loadsmall": SmallQueueLoadScheduling,
             "loadscope": LoadScopeScheduling,
             "loadfile": LoadFileScheduling,
         }

@@ -284,3 +284,62 @@ class LoadScheduling(object):
                     self.config.hook.pytest_collectreport(report=rep)
 
         return same_collection
+
+
+class SmallQueueLoadScheduling(LoadScheduling):  # no cover
+    """
+    A fork of pytest-xdist default load scheduler that uses a fixed size for workers local queue size.
+    """
+
+    def __init__(self, config, log=None, queue_size=2):
+        super().__init__(config, log)
+        if queue_size < 2:
+            raise ValueError('Queue size must be at least 2')
+        self.queue_size = queue_size
+
+    def check_schedule(self, node, duration=0):
+        if node.shutting_down:
+            return
+
+        if self.pending:
+            node_pending = self.node2pending[node]
+            if len(node_pending) < self.queue_size:
+                num_send = self.queue_size - len(node_pending)
+                self._send_tests(node, num_send)
+        self.log("num items waiting for node:", len(self.pending))
+
+    def schedule(self):
+        assert self.collection_is_completed
+
+        # Initial distribution already happened, reschedule on all nodes
+        if self.collection is not None:
+            for node in self.nodes:
+                self.check_schedule(node)
+            return
+
+        # allow nodes to have different collections
+        if not self._check_nodes_have_same_collection():
+            self.log('**Different tests collected, aborting run**')
+            return
+
+        # Collections are identical, create the index of pending items.
+        self.collection = list(self.node2collection.values())[0]
+        self.pending[:] = range(len(self.collection))
+        if not self.collection:
+            return
+
+        # Send a batch of tests to run. If we don't have at least two
+        # tests per node, we have to send them all so that we can send
+        # shutdown signals and get all nodes working.
+        initial_batch = min(len(self.pending), self.queue_size * len(self.nodes))
+
+        # distribute tests round-robin up to the batch size
+        # (or until we run out)
+        nodes = cycle(self.nodes)
+        for i in range(initial_batch):
+            self._send_tests(next(nodes), 1)
+
+        if not self.pending:
+            # initial distribution sent all tests, start node shutdown
+            for node in self.nodes:
+                node.shutdown()

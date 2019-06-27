@@ -74,7 +74,7 @@ def pytest_addoption(parser):
         "--dist",
         metavar="distmode",
         action="store",
-        choices=["each", "load", "loadscope", "loadfile", "no"],
+        choices=["each", "load", "loadsmall", "loadscope", "loadfile", "no"],
         dest="dist",
         default="no",
         help=(
@@ -82,6 +82,8 @@ def pytest_addoption(parser):
             "each: send each test to all available environments.\n\n"
             "load: load balance by sending any pending test to any"
             " available environment.\n\n"
+            "loadsmall: load balance by sending small batches of tests in"
+            " the same scope to any available environment.\n\n"
             "loadscope: load balance by sending pending groups of tests in"
             " the same scope to any available environment.\n\n"
             "loadfile: load balance by sending test grouped by file"
