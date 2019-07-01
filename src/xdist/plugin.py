@@ -194,6 +194,9 @@ def pytest_cmdline_main(config):
         if config.option.maxprocesses:
             numprocesses = min(numprocesses, config.option.maxprocesses)
         config.option.tx = ["popen"] * numprocesses
+    else:
+        config.option.dist = "no"
+
     if config.option.distload:
         config.option.dist = "load"
     val = config.getvalue
